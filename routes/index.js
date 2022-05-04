@@ -31,8 +31,6 @@ router.post('/signup', async (req, res, next)=>{
     // Validate if user exist in our database
     const oldUser = await indexModel.findOne({ email });
     
-
-   
     if (oldUser) {
       return res.status(409).json({message:"User Already Exist. Please Login Please Enter aother email "});
     }

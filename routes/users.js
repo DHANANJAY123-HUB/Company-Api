@@ -42,15 +42,27 @@ router.post('/address',async(req, res, next)=>{
 /*Get api */
 router.get('/addresscount',async (req, res,next)=> {
  
-    res.json({message:"welcome"})
+    //res.json({message:"welcome"})
     
    try{
-        const data = await userModel.find();
-        console.log(data)
-        res.json(data)
-    }
+        const test = await userModel.find();
+        const data = await indexModel.findOne();
+        const testData  = await userModel.find().count();
+
+        console.log(test)
+    res.json({
+        resposeCode:200,
+        responseMessage: "Address report get successfully",
+        _id:data._id,
+        first_name:data.first_name,
+        last_name:data.last_name,
+        email: data.email,
+        addedAddress:testData,
+        Address:test
+    })
+    } 
     catch(error){
-        res.status(500).json({message: error.message})
+        return res.status(500).json({message: error.message})
     }
    
 });
@@ -59,23 +71,26 @@ router.get('/addresscount',async (req, res,next)=> {
 /*Get api */
 router.get('/citycount',async (req, res, next) => {
  
- 
-   console.log("welcome")
-   userModel.find((err,docs)=>{
-        if(!err){
-            
-            console.log(docs)
-              try{
-             res.status(200).json("list",{
-               "city":docs.city,
-               message:"City base report get successfully",
-             });
-            
+    
+
+    try{
+        const test = await userModel.findOne();
+        const testData  = await userModel.find({'city':test.city}).count();
+           
+              
+    res.json({
+        resposeCode:200,
+        responseMessage: "City base report get successfully",
+        "data":[{
+        city: test.city,
+        addressesCound: testData,
+    }]
+        
+    })
         }catch(err){
         res.status(400).json({message:'failed to retrive thr address list'}+err)
         }
-    }
-    });
+    
 
 });
 
@@ -83,22 +98,72 @@ router.get('/citycount',async (req, res, next) => {
 /*Get api */
 router.get('/calculateage',async (req, res, next) => {
  
-  console.log("welcome")
-  indexModel.find((err,docs)=>{
-        if(!err){
-            
-            console.log(docs)
-              try{
-             res.status(200).json("list",{
-               data:docs.dotos,
-               message:"City base report get successfully",
-             });
-            
+  try{
+        const data = await indexModel.findOne();
+        const testData  = await indexModel.find().count();
+
+        let {page,size,sort} = req.query;
+        if(!page){
+
+            page = 1;
+        }
+
+         if(!size){
+
+            size = 5;
+         }
+
+         const limit = parseInt(size);
+         
+         const user = await indexModel.find().sort(
+            {votes :1, _id:1}).limit(limit)
+
+        /*var dateData = await indexModel.findOne( function getAge(date_of_birth) {
+        var today = new Date();
+        var birthDate = new Date(date_of_birth);
+        var age = today.getFullYear() - birthDate.getFullYear();
+        var m = today.getMonth() - birthDate.getMonth();
+        var d = today.getDate() - birthDate.getDate();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+          m--;
+          d--;
+         }
+         return age,m,d;
+          })*/
+           
+           /*var date_of_birth;
+
+          /* const date = await Date.parse (data.date_of_birth);*/
+          /* const date = Datetime.Parse(date_of_birth);*/
+
+        const dateData = await indexModel.aggregate( [ 
+            { $project: { item: 1, ageDifference: { $subtract: [ new Date(), data.date_of_birth] } } } ] )
+
+        //console.log(dateData)*/
+              
+    res.json({
+        resposeCode:200,
+        responseMessage: "City base report get successfully",
+        totalRecord: testData,
+        "data":[{
+         _id: data._id,
+         first_name: data.first_name,
+         last_name:data.last_name,
+         email: data.email,
+         date_of_birth: data.date_of_birth,
+         age:  dateData,
+         page:page,
+         size:size,
+          Info: user,
+         }]
+        
+        })
         }catch(err){
         res.status(400).json({message:'failed to retrive thr address list'}+err)
         }
-    }
-    });
+    
+
 
 });
 
