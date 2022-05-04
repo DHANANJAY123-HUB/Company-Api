@@ -71,37 +71,40 @@ router.post('/signup', async (req, res, next)=>{
 router.post('/login', async(req, res, next)=>{
 
   // Our login logic starts here
-  
+  try{
     // Get user input
-    const { email, password } = req.body;
-      console.log(req.body)
+    const { email, password ,user_name } = req.body;
+      //console.log(req.body)
 
    
     // Validate user input
-    if (!(email && password)) {
+    if (!((email && password)||(user_name  && password) )) {
       res.status(400).json({message:"All input is required"});
     }
     
 
     //Condition apply
-   // let conditions = !!user_name ? {user_name: user_name} : {email: email};
+    //let conditions = !!user_name ? {user_name: user_name} : {email: email};
 
-    indexModel.findOne({email:email, password:password},function(err, doc){
+
+   /*indexModel.findOne( email ? { email } : { username },function(err, doc){
       if(err) throw err;
         if(doc) {
             res.status(200).json({message:"Successfully Login "});
         } else {
             res.status(400).json({message:"Invalid Credentials Please Enter ReLogin"});
-        }
+    }
 
-    });
+    });*/
 
-   /* const data = await indexModel.findOne({ email:email,password:password });
+    const data = await indexModel.findOne(email ? { email,password } : { user_name ,password})
 
-    if (data && (await bcrypt.compare(password, data.password))) {
+    if(data && (bcrypt.compare(password, data.password))) {
+
+      console.log(data)
       // Create token
       const token = jwt.sign(
-        { data_id: data._id, email },
+        {data_id: data._id, email,user_name },
         process.env.TOKEN_KEY,
         {
           expiresIn: "1h",
@@ -112,14 +115,15 @@ router.post('/login', async(req, res, next)=>{
       data.token = token;
 
       // user
-      return res.status(200).json({message:"Successfully Login User"});
+       res.status(200).json({message:"Successfully Login User"});
     }
-    res.status(400).send("Invalid Credentials");
-  } catch (err) {
+    res.status(400).json({message:"Invalid Credentials"});
+   }catch (err) {
     console.log(err);
   }
-  // Our register logic ends here*/
-   
+  // Our register logic ends here
+
+  
 });
 
   
