@@ -1,5 +1,6 @@
 require("../model/connection").connect();
 const db = require ('../model/connection')
+const upload = require("../middleware/upload");
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
@@ -7,11 +8,15 @@ const jwt = require('JsonWebToken');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
-const upload = require('multer');
-
+const GridFsStorage = require("multer-gridfs-storage");
+const Grid = require("gridfs-stream");
 const auth = require("../middleware/auth");
-
 const indexModel = require('../model/indexModel')
+const imgModel = require('../model/imageModel');
+
+
+let gfs;
+
 
 /* GET home page. */
 router.get('/signup', (req, res, next)=>{
@@ -125,6 +130,34 @@ router.post('/login', async(req, res, next)=>{
 
   
 });
+
+
+router.post("/upload", upload.single("file"), async (req, res) => {
+    if (req.file === undefined) return res.send("you must select a file.");
+    const imgUrl = `http://localhost:3000/${req.file.filename}`;
+    return res.send(imgUrl);
+});
+
+/*router.post('/upload', upload.single('image'), (req, res, next) => {
+  
+    var obj = {
+        name: req.body.name,
+        desc: req.body.desc,
+        img: {
+            data: fs.readFileSync(path.join(__dirname + '/uploads/' + req.file.filename)),
+            contentType: 'image/jpg'
+        }
+    }
+    imgModel.create(obj, (err, item) => {
+        if (err) {
+            console.log(err);
+        }
+        else {
+            // item.save();
+            res.redirect('/');
+        }
+    });
+});*/
 
   
 

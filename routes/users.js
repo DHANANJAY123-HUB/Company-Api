@@ -71,8 +71,6 @@ router.get('/addresscount',async (req, res,next)=> {
 /*Get api */
 router.get('/citycount',async (req, res, next) => {
  
-    
-
     try{
         const test = await userModel.findOne();
         const testData  = await userModel.find({'city':test.city}).count();
