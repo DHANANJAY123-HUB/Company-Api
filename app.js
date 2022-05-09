@@ -6,12 +6,12 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var session = require('express-session');
+const indexModel = require('./model/indexModel')
+var imgModel = require('./model/imageModel');
+
 
 var indexRouter = require('./routes/index');
 var userRouter = require('./routes/users');
-
-
-
 
 
 var app = express();
@@ -32,6 +32,28 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/users', userRouter);
 app.use('/', indexRouter);
 
+
+app.get("/:filename", async (req, res) => {
+    try {
+        const file = await indexModel.findOne({ filename: req.params.filename });
+        const readStream = indexRouter.createReadStream(file.filename);
+        readStream.pipe(res);
+    } catch (error) {
+        res.send("not found");
+    }
+});
+
+/*app.get('/', (req, res) => {
+    imgModel.find({}, (err, items) => {
+        if (err) {
+            console.log(err);
+            res.status(500).send('An error occurred', err);
+        }
+        else {
+            res.send('imagesPage', { items: items });
+        }
+    });
+});*/
 
 
 // catch 404 and forward to error handler
