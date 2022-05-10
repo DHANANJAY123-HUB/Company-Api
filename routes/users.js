@@ -97,6 +97,24 @@ router.get('/citycount',async (req, res, next) => {
 router.get('/calculateage',async (req, res, next) => {
  
   try{
+        /*var dateData = await indexModel.findOne(function calculateAge(year,month,day){
+        var currentDate = new Date()
+        var currentYear = currentDate.getFullYear();
+        var currentMonth = currentDate.getUTCMonth()+1;
+        var currentDay = currentDate.getUTCDate();
+
+        var age = currentYear - year;
+        if(currentMonth> month){
+        return age;
+        }else{
+        if(currentDay >=day){
+            return age;
+        }else{
+            age--
+            return age;
+        }
+    }
+})*/
         const data = await indexModel.findOne();
         const testData  = await indexModel.find().count();
 
@@ -116,27 +134,14 @@ router.get('/calculateage',async (req, res, next) => {
          const user = await indexModel.find().sort(
             {votes :1, _id:1}).limit(limit)
 
-        /*var dateData = await indexModel.findOne( function getAge(date_of_birth) {
-        var today = new Date();
-        var birthDate = new Date(date_of_birth);
-        var age = today.getFullYear() - birthDate.getFullYear();
-        var m = today.getMonth() - birthDate.getMonth();
-        var d = today.getDate() - birthDate.getDate();
-        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-          age--;
-          m--;
-          d--;
-         }
-         return age,m,d;
-          })*/
-           
-           /*var date_of_birth;
+       
+        /*var date_of_birth;
 
           /* const date = await Date.parse (data.date_of_birth);*/
           /* const date = Datetime.Parse(date_of_birth);*/
 
-        const dateData = await indexModel.aggregate( [ 
-            { $project: { item: 1, ageDifference: { $subtract: [ new Date(), data.date_of_birth] } } } ] )
+        /*const dateData = await indexModel.aggregate( [ 
+            { $project: { item: 1, ageDifference: { $subtract: [ new Date(), data.date_of_birth] } } } ] )*/
 
         //console.log(dateData)*/
               
@@ -150,7 +155,7 @@ router.get('/calculateage',async (req, res, next) => {
          last_name:data.last_name,
          email: data.email,
          date_of_birth: data.date_of_birth,
-         age:  dateData,
+         /*age:  dateData,*/
          page:page,
          size:size,
           Info: user,
@@ -160,9 +165,18 @@ router.get('/calculateage',async (req, res, next) => {
         }catch(err){
         res.status(400).json({message:'failed to retrive thr address list'}+err)
         }
-    
+    });
 
+//Get by ID Method
+router.get('/:id', async (req, res,next) => {
+    try{
+        const data = await indexModel.findById(req.params.id);
+        res.json(data)
+    }
+    catch(error){
+        res.status(500).json({message: error.message})
+    }
+})
 
-});
 
 module.exports = router;
