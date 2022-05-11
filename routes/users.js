@@ -178,5 +178,17 @@ router.get('/:id', async (req, res,next) => {
     }
 })
 
+//Delete by ID Method
+router.delete('/:id', async (req, res) => {
+    try {
+        const id = req.params.id;
+        const data = await indexModel.findByIdAndDelete(id)
+        res.send(`Document with ${data.first_name} has been deleted..`)
+    }
+    catch (error) {
+        res.status(400).json({ message: error.message })
+    }
+})
+
 
 module.exports = router;
