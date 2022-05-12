@@ -7,7 +7,7 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var session = require('express-session');
 const indexModel = require('./model/indexModel')
-var imgModel = require('./model/imageModel');
+//var imgModel = require('./model/imageModel');
 
 
 var indexRouter = require('./routes/index');
