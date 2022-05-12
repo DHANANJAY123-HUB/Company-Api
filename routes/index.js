@@ -12,7 +12,7 @@ const GridFsStorage = require("multer-gridfs-storage");
 const Grid = require("gridfs-stream");
 const auth = require("../middleware/auth");
 const indexModel = require('../model/indexModel')
-const imgModel = require('../model/imageModel');
+//const imgModel = require('../model/imageModel');
 
 
 let gfs;
@@ -137,6 +137,9 @@ router.post("/upload", upload.single("file"), async (req, res) => {
     const imgUrl = `http://localhost:3000/${req.file.filename}`;
     return res.send(imgUrl);
 });
+
+
+
 
 /*router.post('/upload', upload.single('image'), (req, res, next) => {
   
