@@ -1,7 +1,9 @@
 require("../model/connection").connect();
+const config = process.env;
 const db = require ('../model/connection')
 const upload = require("../middleware/upload");
 const express = require('express');
+const nodemailer = require('nodemailer');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('JsonWebToken');
@@ -9,159 +11,240 @@ const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 const GridFsStorage = require("multer-gridfs-storage");
+const {Validator} = require('node-input-validator');
 const Grid = require("gridfs-stream");
 const auth = require("../middleware/auth");
 const indexModel = require('../model/indexModel')
 //const imgModel = require('../model/imageModel');
 
-
-let gfs;
-
-
-/* GET home page. */
-router.get('/signup', (req, res, next)=>{
-  console.log("Server is started")
-  res.send("Welcome")
+var smtpTransport = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+        user: "dhananjay.sahare@solutionanalists.com",
+        pass: "Welcome@2022"
+    }
 });
-
-
+var rand,mailOptions,host,link;
 
 /*Post Method*/
-router.post('/signup', async (req, res, next)=>{
-     console.log(req.body)
+router.post('/signup', upload.single("file"), async (req, res, next)=>{
+     
+  console.log(req.body)
+  try{
 
-     const {first_name,last_name,email, user_name, profile_pic,date_of_birth, password } = req.body;
+     const {first_name,last_name,email, user_name,date_of_birth, password,user_type } = req.body;
 
      // check if user already exist
-    // Validate if user exist in our database
     const oldUser = await indexModel.findOne({ email });
-    
-    if (oldUser) {
-      return res.status(409).json({message:"User Already Exist. Please Login Please Enter aother email "});
-    }
-
+      if (oldUser) {
+        return res.status(409).json({message:"User Already Exist. Please Login Please Enter aother email "});
+      }
     const encryptedPassword = await bcrypt.hash(password, 10);
- 
-  const data = new indexModel({
-        first_name, 
-        last_name, 
-        email,
-        user_name,
-        password: encryptedPassword,
-        profile_pic,
-        date_of_birth,
-  });
+    const data = new indexModel({
+      first_name, 
+      last_name, 
+      email,
+      user_name, 
+      password:encryptedPassword,
+      /*profile_pic:fs.readFileSync(path.join(__dirname + '/uploads/' + req.file.filename)),
+      {
+         data: fs.readFileSync(path.join(__dirname + '/uploads/' + req.file.profile_pic)),
+         type: 'image/png/jpg'
+      },*/
+      date_of_birth,
+      user_type})
+     
      // Create token
     const token = jwt.sign(
-      { data_id: data._id, email },
+      { data_id: data._id},
       process.env.TOKEN_KEY,
       {
-        expiresIn: "1h",
-      }
-    );
+        expiresIn: "24h",
+      });
+    
     // save user token
-    data.token = token;
-    res.status(201).json(data);
-
- 
-  try{
+      data.token = token;
       const dataToSave =await data.save();
-      res.status(200).json({message:"User Details Successfully Saved"})
-     }catch(error){
-       res.status(400).json({message: error.message})
-     }
+      res.json({
+        resposeCode:200,
+        responseMessage: "Your account Created Succefully ,Please check your email and verify your account to login",
+        "data":{
+          data
+        }
+      })
+  }catch(err){
+    res.status(400).json({message: err.message})
+  }
 
 });
 
-router.post('/login', async(req, res, next)=>{
+//Verify Account
+router.post('/verifyAccount',auth,async(req,res,next)=>{
+
+   const token = req.body.token || req.query.token || req.headers["x-access-token"];
+
+    // Validate user input
+    if (!(token)) {
+      res.status(400).json({message:"without verifying user accout user can not logged in"});
+    }
+    try{
+      const decoded = jwt.verify(token, config.TOKEN_KEY);
+      req.data = decoded;
+      return next();
+      res.json({
+        resposeCode:200,
+        responseMessage: "Your account verify Succefully,Please login to access your account",
+      });
+    }catch(err) {
+      res.status(400).json({message:"Invalid token Please Enter valid toke"});
+    }
+})
+
+
+//Login Api
+router.post('/login',auth, async(req, res, next)=>{
 
   // Our login logic starts here
   try{
-    // Get user input
-    const { email, password ,user_name } = req.body;
-      //console.log(req.body)
-
-   
-    // Validate user input
-    if (!((email && password)||(user_name  && password) )) {
-      res.status(400).json({message:"All input is required"});
-    }
+     const {email,user_name,password} = req.body;
+     const data = await indexModel.findOne(email ? { email,password } : { user_name ,password});
+     console.log(req.body)
     
+     if (!data) {
+           res.send({ msg: 'No user with the email ' + email + ' was found.' });
+      }
 
-    //Condition apply
-    //let conditions = !!user_name ? {user_name: user_name} : {email: email};
 
+     if (indexModel.isLocked) {
+            return  indexModel.incrementLoginAttempts(function(err) {
+                if (err) {
+                  return  res.send(err);
+                }
 
-   /*indexModel.findOne( email ? { email } : { username },function(err, doc){
-      if(err) throw err;
-        if(doc) {
-            res.status(200).json({message:"Successfully Login "});
-        } else {
-            res.status(400).json({message:"Invalid Credentials Please Enter ReLogin"});
-    }
-
-    });*/
-
-    const data = await indexModel.findOne(email ? { email,password } : { user_name ,password})
-
-    if(data && (bcrypt.compare(password, data.password))) {
-
-      console.log(data)
-      // Create token
-      const token = jwt.sign(
-        {data_id: data._id, email,user_name },
-        process.env.TOKEN_KEY,
-        {
-          expiresIn: "1h",
+              return res.send({ msg: 'You have exceeded the maximum number of login attempts.  Your account is locked until.You may attempt to log in again after that time.' });
+            });
         }
-      );
 
-      // save user token
-      data.token = token;
+      /*if (!indexModel.isVerified) {
+            return res.send({ msg: 'Your email has not been verified.  Check your inbox for a verification email.<p><a href="/user/verify-resend/' + email + '" class="btn waves-effect white black-text"><i class="material-icons left">email</i>Re-send verification email</a></p>' });
+      }*/
+     
+     
+     if(data && (bcrypt.compare(password, data.password))) {
 
-      // user
-       res.status(200).json({message:"Successfully Login User"});
-    }
-    res.status(400).json({message:"Invalid Credentials"});
-   }catch (err) {
-    console.log(err);
+        // Create token
+        let  token = jwt.sign(
+            {data_id: data._id},
+             process.env.TOKEN_KEY,
+             {expiresIn: "24h"});
+        // save user token
+              data.token = token;
+        // user
+        res.json({
+          resposeCode:200,
+          responseMessage: "You have logged in Succefully",
+          data
+        });
+     }
+  }catch (err) {
+      res.status(400).json({message: err.message})
   }
-  // Our register logic ends here
 
-  
 });
 
 
+/*Post api*/
+router.post('/changePassword/:id',auth, async(req,res,next)=>{
+        
+  try{
+      
+    const id = req.params.id;
+    const v = new Validator(req.body,{
+      password : 'required',
+      new_password :  'required',
+      confirm_password : 'required|same:new_password'
+    });
+   
+    const matched = await v.check();
+     
+      if(!matched){
+       return res.status(422).send(v.error);
+      }
+      
+      let current_user = id;
+      if(bcrypt.compareSync(req.body.password,current_user.password)){
+        
+        let hashPassword = bcrypt.hashSync(req.body.new_password,10)
+          await indexModel.updateOne({
+            _id:current_user._id
+          },{
+          password:hashPassword
+          });
+          
+          return res.status(200).send({
+          message:'Password Succefully updated',
+          data:{}
+        })
+  
+       const data_id =  indexModel.findOne({id:current_user.id})
+        // Create token
+        const token = jwt.sign(
+          { data_id: data._id},
+          process.env.TOKEN_KEY,
+          jwt_secret,
+          {expiresIn: "1h",
+        });
+      }else{
+        return res.status(400).send({
+          message:'Password does not matched',
+          data:data_id,
+          token:token
+        })
+      }
+
+      }catch(err){
+        return res.status(400).send({
+          message:err.message,
+          data:err
+        });
+  }
+})
+
+/*Post api*/
+router.get('/sendVerificationLink',auth,async(req,res,next)=>{
+
+    rand=Math.floor((Math.random() * 100) + 54);
+    host=req.get('host');
+    link="http://"+req.get('host')+"/verify?id="+rand;
+    mailOptions={
+      to : req.query.to,
+      subject : "Please confirm your Email account",
+      html : "Hello,<br> Please Click on the link to verify your email.<br><a href="+link+">Click here to verify</a>" 
+    }
+    console.log(mailOptions);
+    smtpTransport.sendMail(mailOptions, function(error, response){
+     if(error){
+        console.log(error);
+        res.status(400).json({message:err.message});
+      }else{
+        console.log("Message sent: " + response.message);
+        res.json({
+          resposeCode:200,
+          responseMessage:"Verify account link sent on your email,Please check your email and verify your account"
+        });
+      }
+    });
+});
+
+ 
+
 router.post("/upload", upload.single("file"), async (req, res) => {
-    if (req.file === undefined) return res.send("you must select a file.");
+    if (req.file === undefined) {
+      return res.send("you must select a file.");
+    }
     const imgUrl = `http://localhost:3000/${req.file.filename}`;
     return res.send(imgUrl);
 });
 
-
-
-
-/*router.post('/upload', upload.single('image'), (req, res, next) => {
-  
-    var obj = {
-        name: req.body.name,
-        desc: req.body.desc,
-        img: {
-            data: fs.readFileSync(path.join(__dirname + '/uploads/' + req.file.filename)),
-            contentType: 'image/jpg'
-        }
-    }
-    imgModel.create(obj, (err, item) => {
-        if (err) {
-            console.log(err);
-        }
-        else {
-            // item.save();
-            res.redirect('/');
-        }
-    });
-});*/
-
-  
 
 module.exports = router;

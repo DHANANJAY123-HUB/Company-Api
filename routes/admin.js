@@ -3,10 +3,7 @@ const router = express.Router();
 const addressModel = require('../model/addressModel')
 const indexModel = require('../model/indexModel')
 const auth = require('../middleware/auth');
-//const bodyParser = require('body_parser');
 
-
-/*Post api. */
 router.post('/address',auth,async(req, res) => {
    console.log(req.body)
 
@@ -47,12 +44,12 @@ router.post('/address',auth,async(req, res) => {
             }
         });
     }catch(err){
-          res.status(400).json({message: err.message})
-        }
+         res.status(400).json({message: err.message})
+    }
 });
 
 //Update by ID Method
-router.patch('/updateAddress/:id',auth, async (req, res) => {
+router.patch('/updateAddress/:id', auth, async (req, res) => {
     try {
         const id = req.params.id;
         const updatedData = req.body;
@@ -109,8 +106,9 @@ router.delete('/deleteMySpecificAddress/:id',auth, async (req, res) => {
     }
 })
 
+
 /*Get api*/
-router.get('/ListMyAddress',async(req,res) => {
+router.get('/ListMyAddress',auth,async(req,res) => {
     try{
         //const result =await addressModel.find()
         let {page,size,sort} = req.query;
@@ -149,95 +147,77 @@ router.get('/ListMyAddress',async(req,res) => {
 })
 
 /*Get api */
-router.get('/addressTitle',auth, async (req, res) => {
+router.get('/calculateage',auth,async (req, res) => {
  
-    try{
-        var title,_id;
-        const test = await addressModel.findOne({where:{_id:_id,title:title}});
-        const testData  = await addressModel.find({'title':test.title}).count();
-           
+  try{
+        /*var dateData = await indexModel.findOne(function calculateAge(year,month,day){
+        var currentDate = new Date()
+        var currentYear = currentDate.getFullYear();
+        var currentMonth = currentDate.getUTCMonth()+1;
+        var currentDay = currentDate.getUTCDate();
+
+        var age = currentYear - year;
+        if(currentMonth> month){
+        return age;
+        }else{
+        if(currentDay >=day){
+            return age;
+        }else{
+            age--
+            return age;
+        }
+        }
+       })*/
+        const data = await indexModel.findOne();
+        const testData  = await indexModel.find().count();
+        const addressData = await addressModel.find().count();
+
+        let {page,size,sort} = req.query;
+        if(!page){
+          page = 1;
+        }
+        if(!size){
+          size = 10;
+        }
+        const limit = parseInt(size);
+        const user = await indexModel.find().sort(
+        {votes :1, _id:1}).limit(limit)
+
+       /*var date_of_birth;
+
+          /* const date = await Date.parse (data.date_of_birth);*/
+          /* const date = Datetime.Parse(date_of_birth);*/
+
+        /*const dateData = await indexModel.aggregate( [ 
+            { $project: { item: 1, ageDifference: { $subtract: [ new Date(), data.date_of_birth] } } } ] )*/
+
+        //console.log(dateData)*/
+              
         res.json({
             resposeCode:200,
-            responseMessage: "Title base report get successfully",
+            responseMessage: "User report generated successfully",
+            totalRecord: testData,
+            addresses:addressData,
             "data":[{
-              title: test.title,
-               addressesCound: testData,
+               _id: data._id,
+               first_name: data.first_name,
+               last_name:data.last_name,
+                email: data.email,
+               date_of_birth: data.date_of_birth,
+               profile_pic:data.profile_pic,
+              /* age:  dateData,*/
+               page:page,
+               size:size,
+               Info: user,
             }]
         })
-    
     }catch(err){
-        res.status(400).json({message:err.message})
-    }
-    /*var title,_id;
-    const data = await userModel.aggregate([
-  {
-    $facet: {
-      "count": [
-        { $match: ({'_id':_id},{$set:{'title':title}}) },
-        { $count: "totalCount" }
-      ],
-  }
-}
-])
-    res.json({
-      data
-    })*/
-});
-
-
-/*Get api */
-router.get('/addresscount',auth,async (req, res,next)=> {
- 
-    //res.json({message:"welcome"})
-    
-   try{
-        const test = await addressModel.find();
-        const data = await indexModel.findOne();
-        const testData  = await addressModel.find().count();
-
-        console.log(test)
-    res.json({
-        resposeCode:200,
-        responseMessage: "Address report get successfully",
-        _id:data._id,
-        first_name:data.first_name,
-        last_name:data.last_name,
-        email: data.email,
-        addedAddress:testData,
-        Address:test
-    })
-    } 
-    catch(err){
-        return res.status(500).json({message: err.message})
-    }
-   
-});
-
-
-/*Get api */
-router.get('/citycount', auth,async (req, res, next) => {
- 
-    try{
-        const test = await addressModel.findOne();
-        const testData  = await addressModel.find({'city':test.city}).count();
-           
-              
-    res.json({
-        resposeCode:200,
-        responseMessage: "City base report get successfully",
-        "data":[{
-        city: test.city,
-        addressesCound: testData,
-    }]
-        
-    })
-        }catch(err){
-        res.status(400).json({message:'failed to retrive thr address list'}+err)
+         res.status(400).json({message:err.message})
         }
 });
 
 //Get by ID Method
-router.get('/:id',auth, async (req, res,next) => {
+router.get('/:id', auth, async (req, res,next) => {
     try{
         const data = await indexModel.findById(req.params.id);
         res.json(data)
