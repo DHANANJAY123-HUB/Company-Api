@@ -1,20 +1,21 @@
 require("dotenv").config();
-var createError = require('http-errors');
-var express = require('express');
-var path = require('path');
-//var bodyParser = require('body-parser');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
-var session = require('express-session');
+const createError = require('http-errors');
+const express = require('express');
+const path = require('path');
+//const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
+const logger = require('morgan');
+const session = require('express-session');
 const indexModel = require('./model/indexModel')
-//var imgModel = require('./model/imageModel');
+//const imgModel = require('./model/imageModel');
+
+const userRouter = require('./routes/users');
+const adminRouter = require('./routes/admin');
+const indexRouter = require('./routes/index');
 
 
-var indexRouter = require('./routes/index');
-var userRouter = require('./routes/users');
 
-
-var app = express();
+const app = express();
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -29,11 +30,19 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 //app.use(session({'secret':'my pet name is shanky'}))
 
-app.use('/users', userRouter);
+
 app.use('/', indexRouter);
+app.use('/admin',adminRouter);
+app.use('/users', userRouter);
+
+/*app.get('/',{
+  headers: {
+    Authorization: 'Bearer '+ authentication.getToken()
+  }
+});*/
 
 
-app.get("/:filename", async (req, res) => {
+/*app.get("/:filename", async (req, res) => {
     try {
         const file = await indexModel.findOne({ filename: req.params.filename });
         const readStream = indexRouter.createReadStream(file.filename);
@@ -41,7 +50,7 @@ app.get("/:filename", async (req, res) => {
     } catch (error) {
         res.send("not found");
     }
-});
+});*/
 
 /*app.get('/', (req, res) => {
     imgModel.find({}, (err, items) => {
