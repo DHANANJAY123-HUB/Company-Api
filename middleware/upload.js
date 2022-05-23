@@ -1,7 +1,5 @@
-const multer = require("multer");
+/*const multer = require("multer");
 const GridFsStorage = require("multer-gridfs-storage").GridFsStorage;
-
-
 
 const storage = new GridFsStorage({
     url: "mongodb://localhost:27017/company",
@@ -21,9 +19,9 @@ const storage = new GridFsStorage({
     },
 });
 
-module.exports = multer({ storage });
+module.exports = multer({ storage });*/
 
-/*var multer = require('multer');
+var multer = require('multer');
   
 var storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -34,4 +32,4 @@ var storage = multer.diskStorage({
     }
 });
   
-module.exports = multer({ storage: storage });*/
+module.exports = multer({ storage: storage });
