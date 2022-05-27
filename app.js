@@ -35,6 +35,7 @@ app.use('/', indexRouter);
 app.use('/admin',adminRouter);
 app.use('/users', userRouter);
 
+
 /*app.get('/',{
   headers: {
     Authorization: 'Bearer '+ authentication.getToken()
