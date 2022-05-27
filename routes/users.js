@@ -110,7 +110,7 @@ router.delete('/deleteMySpecificAddress/:id',auth, async (req, res) => {
 })
 
 /*Get api*/
-router.get('/ListMyAddress',async(req,res) => {
+router.get('/ListMyAddress',auth, async(req,res) => {
     try{
         //const result =await addressModel.find()
         let {page,size,sort} = req.query;
